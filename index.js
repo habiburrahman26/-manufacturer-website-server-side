@@ -25,12 +25,9 @@ const verifyJWT = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if (err) {
-      res.status(403).send({ message: 'Forbidden Access' });
-    } else {
-      req.decoded = decoded;
-      next();
-    }
+    if (err) return res.status(403).send({ message: 'Forbidden Access' });
+    req.decoded = decoded;
+    next();
   });
 };
 
@@ -46,13 +43,24 @@ const run = async () => {
       .db('computer-parts')
       .collection('purchases');
 
+    app.get('/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email });
+      if (!user) return res.send({ message: 'user not found' });
+      const isAdmin = user.role === 'admin';
+      res.send({ admin: isAdmin });
+    });
+
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
       const filter = { email: email };
       const options = { upsert: true };
       const updatedDoc = {
-        $set: user,
+        $set: {
+          email: user.email,
+          role: '',
+        },
       };
       const result = await userCollection.updateOne(
         filter,
@@ -80,6 +88,14 @@ const run = async () => {
       const query = { _id: ObjectId(id) };
       const parts = await partsCollection.findOne(query);
       res.send(parts);
+    });
+
+    app.get('/purchase', async (req, res) => {
+      const email = req.query.email;
+      const purchase = await purchaseCollection
+        .find({ buyer: email })
+        .toArray();
+      res.send(purchase);
     });
 
     app.put('/purchase', async (req, res) => {
