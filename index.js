@@ -24,6 +24,31 @@ const run = async () => {
     const partsCollection = await client
       .db('computer-parts')
       .collection('parts');
+    const userCollection = await client.db('computer-parts').collection('user');
+
+    app.put('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
+      const token = jwt.sign(
+        { email: email },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+          expiresIn: '2h',
+        }
+      );
+      res.send({ accessToken: token });
+    });
 
     app.get('/parts', async (req, res) => {
       const parts = await partsCollection.find().toArray();
