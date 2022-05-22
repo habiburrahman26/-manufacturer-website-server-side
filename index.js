@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -25,6 +25,9 @@ const run = async () => {
       .db('computer-parts')
       .collection('parts');
     const userCollection = await client.db('computer-parts').collection('user');
+    const purchaseCollection = await client
+      .db('computer-parts')
+      .collection('purchases');
 
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
@@ -53,6 +56,39 @@ const run = async () => {
     app.get('/parts', async (req, res) => {
       const parts = await partsCollection.find().toArray();
       res.send(parts);
+    });
+
+    app.get('/parts/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const parts = await partsCollection.findOne(query);
+      res.send(parts);
+    });
+
+    app.put('/purchase', async (req, res) => {
+      const purchase = req.body;
+      const options = { upsert: true };
+      const query = { _id: ObjectId(purchase.productId) };
+      const parts = await partsCollection.findOne(query);
+      if (parts.availableQuantity >= purchase.quantity) {
+        const newAvailableQuantity =
+          parts.availableQuantity - purchase.quantity;
+        const updatedDoc = {
+          $set: {
+            availableQuantity: newAvailableQuantity,
+          },
+        };
+
+        const update = await partsCollection.updateOne(
+          query,
+          updatedDoc,
+          options
+        );
+        const result = await purchaseCollection.insertOne(purchase);
+        res.send(result);
+      } else {
+        res.send({ message: 'No Parts Found' });
+      }
     });
   } finally {
     // await client.close();
