@@ -20,6 +20,7 @@ const client = new MongoClient(uri, {
 
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
+  console.log(authHeader);
   if (!authHeader)
     return res.status(401).send({ message: 'Unauthorized Access' });
 
@@ -43,13 +44,41 @@ const run = async () => {
       .db('computer-parts')
       .collection('purchases');
 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const user = await userCollection.findOne({ email: email });
+      if (user.role === 'admin') {
+        next();
+      } else {
+        res.status(403).send({ message: 'Forbidden Access' });
+      }
+    };
+
     app.get('/admin/:email', async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       if (!user) return res.send({ message: 'user not found' });
       const isAdmin = user.role === 'admin';
-      console.log(isAdmin);
       res.send({ admin: isAdmin });
+    });
+
+    app.put('/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
+      const authHeader = req.headers.authorization;
+      console.log(authHeader);
+      const email = req.params.email;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          role: 'admin',
+        },
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
     });
 
     app.get('/user', async (req, res) => {
@@ -147,6 +176,11 @@ const run = async () => {
       } else {
         res.send({ message: 'No Parts Found' });
       }
+    });
+
+    app.get('/order',verifyJWT,verifyAdmin, async (req, res) => {
+      const orders = await purchaseCollection.find().toArray();
+      res.send(orders);
     });
   } finally {
     // await client.close();
