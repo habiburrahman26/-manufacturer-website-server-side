@@ -137,6 +137,12 @@ const run = async () => {
       res.send(parts);
     });
 
+    app.post('/parts', verifyJWT, verifyAdmin, async (req, res) => {
+      const parts = req.body;
+      const result = await partsCollection.insertOne(parts);
+      res.send(result);
+    });
+
     app.get('/parts/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
@@ -178,7 +184,7 @@ const run = async () => {
       }
     });
 
-    app.get('/order',verifyJWT,verifyAdmin, async (req, res) => {
+    app.get('/order', verifyJWT, verifyAdmin, async (req, res) => {
       const orders = await purchaseCollection.find().toArray();
       res.send(orders);
     });
