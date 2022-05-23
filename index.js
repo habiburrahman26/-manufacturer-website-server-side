@@ -51,6 +51,31 @@ const run = async () => {
       res.send({ admin: isAdmin });
     });
 
+    app.get('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = await userCollection.findOne({ email });
+      res.send(user);
+    });
+
+    app.put('/user/updateProfile/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          ...user,
+          role: '',
+        },
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
@@ -58,7 +83,7 @@ const run = async () => {
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
-          email: user.email,
+          ...user,
           role: '',
         },
       };
