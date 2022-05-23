@@ -48,7 +48,13 @@ const run = async () => {
       const user = await userCollection.findOne({ email });
       if (!user) return res.send({ message: 'user not found' });
       const isAdmin = user.role === 'admin';
+      console.log(isAdmin);
       res.send({ admin: isAdmin });
+    });
+
+    app.get('/user', async (req, res) => {
+      const users = await userCollection.find().toArray();
+      res.send(users);
     });
 
     app.get('/user/:email', async (req, res) => {
@@ -63,10 +69,7 @@ const run = async () => {
       const filter = { email: email };
       const options = { upsert: true };
       const updatedDoc = {
-        $set: {
-          ...user,
-          role: '',
-        },
+        $set: user,
       };
       const result = await userCollection.updateOne(
         filter,
@@ -82,10 +85,7 @@ const run = async () => {
       const filter = { email: email };
       const options = { upsert: true };
       const updatedDoc = {
-        $set: {
-          ...user,
-          role: '',
-        },
+        $set: user,
       };
       const result = await userCollection.updateOne(
         filter,
