@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { decode } = require('jsonwebtoken');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.STRIPE_SECRET_TOKEN);
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -42,6 +43,9 @@ const run = async () => {
     const purchaseCollection = await client
       .db('computer-parts')
       .collection('purchases');
+    const paymentCollection = await client
+      .db('computer-parts')
+      .collection('payment');
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -157,6 +161,13 @@ const run = async () => {
       res.send(purchase);
     });
 
+    app.get('/purchase/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const purchase = await purchaseCollection.findOne(query);
+      res.send(purchase);
+    });
+
     app.put('/purchase', async (req, res) => {
       const purchase = req.body;
       const options = { upsert: true };
@@ -183,6 +194,24 @@ const run = async () => {
       }
     });
 
+    app.patch('/purchase/:id',verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+
+      const result = await paymentCollection.insertOne(payment);
+      const updatedPurchase = await purchaseCollection.updateOne(
+        filter,updatedDoc
+      );
+      res.send(updatedPurchase);
+    });
+
     app.delete('/purchase/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
@@ -201,12 +230,11 @@ const run = async () => {
       const purchase = await purchaseCollection.findOne(query);
       const filter = { _id: ObjectId(purchase.productId) };
       const parts = await partsCollection.findOne(filter);
-      console.log('parts',parts);
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
           ...parts,
-          availableQuantity: +parts.availableQuantity + (+purchase.quantity),
+          availableQuantity: +parts.availableQuantity + +purchase.quantity,
         },
       };
       const result = await partsCollection.updateOne(
@@ -215,6 +243,24 @@ const run = async () => {
         options
       );
       res.send(result);
+    });
+
+    // PAYMENT
+    app.post('/create-payment-intent', async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
     });
   } finally {
     // await client.close();
