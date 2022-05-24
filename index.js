@@ -20,7 +20,6 @@ const client = new MongoClient(uri, {
 
 const verifyJWT = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  console.log(authHeader);
   if (!authHeader)
     return res.status(401).send({ message: 'Unauthorized Access' });
 
@@ -184,9 +183,38 @@ const run = async () => {
       }
     });
 
+    app.delete('/purchase/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await purchaseCollection.deleteOne(query);
+      res.send(result);
+    });
+
     app.get('/order', verifyJWT, verifyAdmin, async (req, res) => {
       const orders = await purchaseCollection.find().toArray();
       res.send(orders);
+    });
+
+    app.put('/order/purchase/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const purchase = await purchaseCollection.findOne(query);
+      const filter = { _id: ObjectId(purchase.productId) };
+      const parts = await partsCollection.findOne(filter);
+      console.log('parts',parts);
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          ...parts,
+          availableQuantity: +parts.availableQuantity + (+purchase.quantity),
+        },
+      };
+      const result = await partsCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
     });
   } finally {
     // await client.close();
