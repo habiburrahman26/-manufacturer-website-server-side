@@ -153,6 +153,13 @@ const run = async () => {
       res.send(parts);
     });
 
+    app.delete('/parts/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await partsCollection.deleteOne(query);
+      res.send(result);
+    });
+
     app.get('/purchase', async (req, res) => {
       const email = req.query.email;
       const purchase = await purchaseCollection
@@ -194,7 +201,7 @@ const run = async () => {
       }
     });
 
-    app.patch('/purchase/:id',verifyJWT, async (req, res) => {
+    app.patch('/purchase/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const payment = req.body;
       const filter = { _id: ObjectId(id) };
@@ -207,7 +214,8 @@ const run = async () => {
 
       const result = await paymentCollection.insertOne(payment);
       const updatedPurchase = await purchaseCollection.updateOne(
-        filter,updatedDoc
+        filter,
+        updatedDoc
       );
       res.send(updatedPurchase);
     });
