@@ -60,12 +60,16 @@ const run = async () => {
       }
     };
 
-    app.get('/reviews', async (req, res) => {
+    app.get('/review', async (req, res) => {
       const reviews = await reviewCollection.find().toArray();
       res.send(reviews);
     });
 
-    
+    app.post('/review',verifyJWT, async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
 
     app.get('/admin/:email', async (req, res) => {
       const email = req.params.email;
