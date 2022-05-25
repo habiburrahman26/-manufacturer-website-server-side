@@ -46,6 +46,9 @@ const run = async () => {
     const paymentCollection = await client
       .db('computer-parts')
       .collection('payment');
+    const reviewCollection = await client
+      .db('computer-parts')
+      .collection('reviews');
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -56,6 +59,13 @@ const run = async () => {
         res.status(403).send({ message: 'Forbidden Access' });
       }
     };
+
+    app.get('/reviews', async (req, res) => {
+      const reviews = await reviewCollection.find().toArray();
+      res.send(reviews);
+    });
+
+    
 
     app.get('/admin/:email', async (req, res) => {
       const email = req.params.email;
@@ -200,6 +210,28 @@ const run = async () => {
         res.send({ message: 'No Parts Found' });
       }
     });
+
+    app.put(
+      '/purchase/status/:id',
+      verifyJWT,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+        const options = { upsert: true };
+        const updatedDoc = {
+          $set: {
+            status: 'Shipped',
+          },
+        };
+        const result = await purchaseCollection.updateOne(
+          query,
+          updatedDoc,
+          options
+        );
+        res.send(result);
+      }
+    );
 
     app.patch('/purchase/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
