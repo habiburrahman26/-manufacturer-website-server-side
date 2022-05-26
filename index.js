@@ -9,6 +9,7 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 
+app.use(express.static('public'));
 app.use(cors());
 app.use(express.json());
 
@@ -125,7 +126,7 @@ const run = async () => {
       res.send(result);
     });
 
-    app.put('/user/uploadPhoto',verifyJWT, async (req, res) => {
+    app.put('/user/uploadPhoto', verifyJWT, async (req, res) => {
       const id = req.body.id;
       const img = req.body.img;
       const filter = { _id: ObjectId(id) };
