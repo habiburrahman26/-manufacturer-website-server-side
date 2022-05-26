@@ -71,7 +71,7 @@ const run = async () => {
       res.send(result);
     });
 
-    app.get('/admin/:email',verifyJWT, async (req, res) => {
+    app.get('/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       if (!user) return res.send({ message: 'user not found' });
@@ -103,13 +103,13 @@ const run = async () => {
       res.send(users);
     });
 
-    app.get('/user/:email',verifyJWT, async (req, res) => {
+    app.get('/user/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       res.send(user);
     });
 
-    app.put('/user/updateProfile/:email',verifyJWT, async (req, res) => {
+    app.put('/user/updateProfile/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = req.body;
       const filter = { email: email };
@@ -125,10 +125,25 @@ const run = async () => {
       res.send(result);
     });
 
+    app.put('/user/uploadPhoto',verifyJWT, async (req, res) => {
+      const id = req.body.id;
+      const img = req.body.img;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: { img: img },
+      };
+      const result = await userCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
     app.put('/user/:email', async (req, res) => {
       const email = req.params.email;
       const user = req.body;
-      console.log(user);
       const filter = { email: email };
       const options = { upsert: true };
       const updatedDoc = {
@@ -175,7 +190,7 @@ const run = async () => {
       res.send(result);
     });
 
-    app.get('/purchase',verifyJWT, async (req, res) => {
+    app.get('/purchase', verifyJWT, async (req, res) => {
       const email = req.query.email;
       const purchase = await purchaseCollection
         .find({ buyer: email })
@@ -291,7 +306,7 @@ const run = async () => {
     });
 
     // PAYMENT
-    app.post('/create-payment-intent',verifyJWT, async (req, res) => {
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = price * 100;
 
