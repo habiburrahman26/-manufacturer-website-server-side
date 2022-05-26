@@ -65,13 +65,13 @@ const run = async () => {
       res.send(reviews);
     });
 
-    app.post('/review',verifyJWT, async (req, res) => {
+    app.post('/review', verifyJWT, async (req, res) => {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
       res.send(result);
     });
 
-    app.get('/admin/:email', async (req, res) => {
+    app.get('/admin/:email',verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       if (!user) return res.send({ message: 'user not found' });
@@ -98,18 +98,18 @@ const run = async () => {
       res.send(result);
     });
 
-    app.get('/user', async (req, res) => {
+    app.get('/user', verifyJWT, verifyAdmin, async (req, res) => {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
 
-    app.get('/user/:email', async (req, res) => {
+    app.get('/user/:email',verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = await userCollection.findOne({ email });
       res.send(user);
     });
 
-    app.put('/user/updateProfile/:email', async (req, res) => {
+    app.put('/user/updateProfile/:email',verifyJWT, async (req, res) => {
       const email = req.params.email;
       const user = req.body;
       const filter = { email: email };
@@ -174,7 +174,7 @@ const run = async () => {
       res.send(result);
     });
 
-    app.get('/purchase', async (req, res) => {
+    app.get('/purchase',verifyJWT, async (req, res) => {
       const email = req.query.email;
       const purchase = await purchaseCollection
         .find({ buyer: email })
@@ -290,7 +290,7 @@ const run = async () => {
     });
 
     // PAYMENT
-    app.post('/create-payment-intent', async (req, res) => {
+    app.post('/create-payment-intent',verifyJWT, async (req, res) => {
       const { price } = req.body;
       const amount = price * 100;
 
