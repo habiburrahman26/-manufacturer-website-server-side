@@ -145,12 +145,7 @@ const run = async () => {
       const updatedDoc = {
         $set: user,
       };
-      const result = await userCollection.updateOne(
-        filter,
-        updatedDoc,
-        options
-      );
-
+    
       const token = jwt.sign(
         { email: email },
         process.env.ACCESS_TOKEN_SECRET,
